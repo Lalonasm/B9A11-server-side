@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -9,12 +9,12 @@ const app = express();
 
 const corsOptions = {
     origin: [
-      'http://localhost:5173',
-      'http://localhost:5174',
+        'http://localhost:5173',
+        'http://localhost:5174',
     ],
     credentials: true,
     optionSuccessStatus: 200,
-  }
+}
 
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -36,6 +36,48 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
+        const booksCollection = client.db('library').collection('books');
+        const borrowCollection = client.db('library').collection('borrow');
+
+        // get all books data from db
+        app.get('/books', async (req, res) => {
+            const result = await booksCollection.find().toArray()
+
+            res.send(result)
+        })
+
+        // get a single book data from db
+        app.get('/book/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await booksCollection.findOne(query);
+            res.send(result)
+        })
+
+        // Save a book data in db
+        app.post('/book', async (req, res) => {
+            const bookData = req.body
+
+            const result = await booksCollection.insertOne(bookData)
+            res.send(result)
+        })
+
+        // Save a bid data in db
+        app.post('/borrow', async (req, res) => {
+            const borrowData = req.body;
+            // console.log(bidData);
+            // return;
+            const result = await borrowCollection.insertOne(borrowData);
+            res.send(result);
+        })
+        // Save a bid data in db
+        app.post('/book', async (req, res) => {
+            const bookData = req.body;
+            const result = await borrowCollection.insertOne(bookData);
+            res.send(result);
+        })
+
+
         // await client.connect();
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
