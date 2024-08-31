@@ -77,6 +77,37 @@ async function run() {
             res.send(result);
         })
 
+        // get all books posted by a specific user
+        app.get('/books/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { 'borrower.email': email }
+            const result = await booksCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        // delete a book data from db
+        app.delete('/book/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await booksCollection.deleteOne(query);
+            res.send(result);
+        });
+
+         // update a job in db
+    app.put('/book/:id', async (req, res) => {
+        const id = req.params.id;
+        const bookData = req.body;
+        const query = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            ...bookData,
+          }};
+          const result = await booksCollection.updateOne(query, updateDoc, options);
+          res.send(result)
+        }
+      )
+
 
         // await client.connect();
         // Send a ping to confirm a successful connection
