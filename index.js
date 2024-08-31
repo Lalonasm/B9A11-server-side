@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
@@ -18,6 +20,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
 
 
@@ -39,8 +42,33 @@ async function run() {
         const booksCollection = client.db('library').collection('books');
         const borrowCollection = client.db('library').collection('borrow');
 
+
+
+        // auth related api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            console.log('user for token', user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' });
+
+            res.cookie('token ', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none'
+            })
+                .send({ success: true })
+        })
+
+        app.post('/logout', async (req, res) => {
+            const user = req.body;
+            console.log('logging out', user);
+            res.clearCookie('token', { maxAge: 0 })
+                .send({ success: true })
+        })
+
         // get all books data from db
         app.get('/books', async (req, res) => {
+
+            console.log('cook cookies', req.cookies);
             const result = await booksCollection.find().toArray()
 
             res.send(result)
@@ -93,20 +121,21 @@ async function run() {
             res.send(result);
         });
 
-         // update a job in db
-    app.put('/book/:id', async (req, res) => {
-        const id = req.params.id;
-        const bookData = req.body;
-        const query = { _id: new ObjectId(id) };
-        const options = { upsert: true };
-        const updateDoc = {
-          $set: {
-            ...bookData,
-          }};
-          const result = await booksCollection.updateOne(query, updateDoc, options);
-          res.send(result)
+        // update a job in db
+        app.put('/book/:id', async (req, res) => {
+            const id = req.params.id;
+            const bookData = req.body;
+            const query = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    ...bookData,
+                }
+            };
+            const result = await booksCollection.updateOne(query, updateDoc, options);
+            res.send(result)
         }
-      )
+        )
 
 
         // await client.connect();
