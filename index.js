@@ -22,7 +22,27 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// middlewares
+const logger = (req, res, next) => {
+    console.log('log:info', req.method, req.url);
+    next();
+}
 
+const verifyToken = (req, res, next) => {
+    const token = req?.cookies?.token;
+    console.log('token in the middleware', token);
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized access' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.user = decoded;
+        next();
+    })
+    // next();
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.gbneo1a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -36,6 +56,9 @@ const client = new MongoClient(uri, {
     }
 });
 
+
+
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -45,7 +68,7 @@ async function run() {
 
 
         // auth related api
-        app.post('/jwt', async (req, res) => {
+        app.post('/jwt', logger, async (req, res) => {
             const user = req.body;
             console.log('user for token', user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' });
@@ -66,9 +89,14 @@ async function run() {
         })
 
         // get all books data from db
-        app.get('/books', async (req, res) => {
+        app.get('/books', logger, verifyToken, async (req, res) => {
 
-            console.log('cook cookies', req.cookies);
+            console.log('token owner info:', req.user);
+
+if(req.user.email !== req.query.email){
+    return res.status(403).send({message:'forbidden access'})
+}
+
             const result = await booksCollection.find().toArray()
 
             res.send(result)
