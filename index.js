@@ -93,9 +93,9 @@ async function run() {
 
             console.log('token owner info:', req.user);
 
-if(req.user.email !== req.query.email){
-    return res.status(403).send({message:'forbidden access'})
-}
+            if (req.user.email !== req.query.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
 
             const result = await booksCollection.find().toArray()
 
@@ -134,8 +134,13 @@ if(req.user.email !== req.query.email){
         })
 
         // get all books posted by a specific user
-        app.get('/books/:email', async (req, res) => {
-            const email = req.params.email;
+        app.get('/books/:email', verifyToken, async (req, res) => {
+          
+            const tokenEmail = req.user.email
+            const email = req.params.email
+            if (tokenEmail !== email) {
+              return res.status(403).send({ message: 'forbidden access' })
+            }
             const query = { 'borrower.email': email }
             const result = await booksCollection.find(query).toArray();
             res.send(result);
