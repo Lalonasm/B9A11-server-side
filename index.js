@@ -13,6 +13,7 @@ const corsOptions = {
     origin: [
         'http://localhost:5173',
         'http://localhost:5174',
+        'https://oxford-a11.web.app'
     ],
     credentials: true,
     optionSuccessStatus: 200,
@@ -20,29 +21,29 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cookieParser());
+// app.use(cookieParser());
 
 // middlewares
-const logger = (req, res, next) => {
-    console.log('log:info', req.method, req.url);
-    next();
-}
+// const logger = (req, res, next) => {
+//     console.log('log:info', req.method, req.url);
+//     next();
+// }
 
-const verifyToken = (req, res, next) => {
-    const token = req?.cookies?.token;
-    console.log('token in the middleware', token);
-    if (!token) {
-        return res.status(401).send({ message: 'Unauthorized access' })
-    }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: 'unauthorized access' })
-        }
-        req.user = decoded;
-        next();
-    })
-    // next();
-}
+// const verifyToken = (req, res, next) => {
+//     const token = req?.cookies?.token;
+//     console.log('token in the middleware', token);
+//     if (!token) {
+//         return res.status(401).send({ message: 'Unauthorized access' })
+//     }
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+//         if (err) {
+//             return res.status(401).send({ message: 'unauthorized access' })
+//         }
+//         req.user = decoded;
+//         next();
+//     })
+//     // next();
+// }
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.gbneo1a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -68,34 +69,34 @@ async function run() {
 
 
         // auth related api
-        app.post('/jwt', logger, async (req, res) => {
-            const user = req.body;
-            console.log('user for token', user);
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' });
+        // app.post('/jwt', logger, async (req, res) => {
+        //     const user = req.body;
+        //     console.log('user for token', user);
+        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' });
 
-            res.cookie('token ', token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none'
-            })
-                .send({ success: true })
-        })
+        //     res.cookie('token ', token, {
+        //         httpOnly: true,
+        //         secure: true,
+        //         sameSite: 'none'
+        //     })
+        //         .send({ success: true })
+        // })
 
-        app.post('/logout', async (req, res) => {
-            const user = req.body;
-            console.log('logging out', user);
-            res.clearCookie('token', { maxAge: 0 })
-                .send({ success: true })
-        })
+        // app.post('/logout', async (req, res) => {
+        //     const user = req.body;
+        //     console.log('logging out', user);
+        //     res.clearCookie('token', { maxAge: 0 })
+        //         .send({ success: true })
+        // })
 
         // get all books data from db
-        app.get('/books', logger, verifyToken, async (req, res) => {
+        app.get('/books', async (req, res) => {
 
-            console.log('token owner info:', req.user);
+            // console.log('token owner info:', req.user);
 
-            if (req.user.email !== req.query.email) {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
+            // if (req.user.email !== req.query.email) {
+            //     return res.status(403).send({ message: 'forbidden access' })
+            // }
 
             const result = await booksCollection.find().toArray()
 
@@ -121,7 +122,7 @@ async function run() {
         // Save a bid data in db
         app.post('/borrow', async (req, res) => {
             const borrowData = req.body;
-           
+
             const result = await borrowCollection.insertOne(borrowData);
             res.send(result);
         })
@@ -133,13 +134,13 @@ async function run() {
         })
 
         // get all books posted by a specific user
-        app.get('/books/:email', verifyToken, async (req, res) => {
-          
-            const tokenEmail = req.user.email
+        app.get('/books/:email', async (req, res) => {
+
+            // const tokenEmail = req.user.email
             const email = req.params.email
-            if (tokenEmail !== email) {
-              return res.status(403).send({ message: 'forbidden access' })
-            }
+            // if (tokenEmail !== email) {
+            //     return res.status(403).send({ message: 'forbidden access' })
+            // }
             const query = { 'borrower.email': email }
             const result = await booksCollection.find(query).toArray();
             res.send(result);
@@ -170,11 +171,11 @@ async function run() {
         )
 
 
-       
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-       
+
     }
 }
 run().catch(console.dir);
